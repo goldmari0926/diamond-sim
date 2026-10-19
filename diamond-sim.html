@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>흑연 → 다이아몬드 가상 실험실</title>
+<style>
+:root{--bg:#eef1f5;--pn:#fff;--tx:#1b2430;--mu:#5a6676;--ac:#0b7285;--bd:#cfd6df;--wr:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151c;--pn:#18202a;--tx:#e6ebf2;--mu:#9aa6b6;--ac:#3bc9db;--bd:#2c3745;--wr:#fbbf24}}
+:root[data-theme="dark"]{--bg:#10151c;--pn:#18202a;--tx:#e6ebf2;--mu:#9aa6b6;--ac:#3bc9db;--bd:#2c3745;--wr:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Noto Sans KR","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}
+h1{font-size:18px;margin:0}h2{font-size:14px;margin:0 0 8px;color:var(--ac)}
+header{padding:12px 16px;border-bottom:1px solid var(--bd)}header p{margin:2px 0 0;color:var(--wr);font-size:12px}
+.g{display:grid;grid-template-columns:270px minmax(0,1fr) 250px;gap:12px;padding:12px}
+@media(max-width:1000px){.g{grid-template-columns:1fr}}
+.p{background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:12px}
+label{display:block;margin:6px 0 2px;font-size:12px;color:var(--mu)}
+input[type=range]{width:100%}select,button,input[type=number]{font:inherit;padding:5px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--pn);color:var(--tx)}
+button{cursor:pointer}button.pr{background:var(--ac);color:#fff;border-color:var(--ac)}
+.bs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+canvas{width:100%;display:block;background:#0d131a;border-radius:6px}
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.kv{display:flex;justify-content:space-between;border-bottom:1px dashed var(--bd);padding:3px 0}.kv b{font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--mu)}.warn{color:var(--wr);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:12px}td,th{padding:2px 3px;text-align:left}td input{width:58px;padding:2px 4px}
+details{margin-top:6px}summary{cursor:pointer;color:var(--ac)}
+.badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:11px;border:1px solid var(--wr);color:var(--wr)}
+.lit{border-color:var(--ac);color:var(--ac)}
+.leg span{margin-right:10px;font-size:12px}.leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px}
+</style></head><body>
+<header><h1>흑연은 어떻게 다이아몬드가 될까? — 촉매 금속별 합성 과정·변환율 가상 실험실</h1>
+<p>※ 교육용 단순화 모형입니다. 원자 움직임은 모식도이며, 속도 계수는 실험 자료가 아닌 '가상 모형값'입니다. 모든 결과는 실제 실험값이 아닌 시뮬레이션 예측값입니다.</p></header>
+<div class="g">
+<aside>
+<div class="p"><h2>실험 조건 <span class="badge">예시값</span></h2>
+<label>촉매 금속</label><select id="metal"><option value="Fe">철(Fe)</option><option value="Ni">니켈(Ni)</option><option value="Co">코발트(Co)</option></select>
+<label>반응 온도: <b id="vT"></b> °C</label><input type="range" id="T" min="1300" max="1700" step="10" value="1400">
+<label>반응 압력: <b id="vP"></b> GPa</label><input type="range" id="P" min="4.5" max="7.5" step="0.1" value="6.0">
+<label>반응 시간: <b id="vR"></b> 분</label><input type="range" id="R" min="10" max="120" step="5" value="60">
+<label>초기 흑연 질량: <b id="vG"></b> g</label><input type="range" id="G" min="0.5" max="5" step="0.5" value="2">
+<label>촉매 금속의 양: <b id="vM"></b> g</label><input type="range" id="Mm" min="2" max="30" step="1" value="10">
+<label>애니메이션 속도(반응 시간 분/재생 초)</label><select id="spd"><option>1</option><option selected>3</option><option>6</option><option>12</option></select>
+<div class="bs"><button class="pr" id="bS">실험 시작</button><button id="bP">일시 정지</button><button id="bRs">재개</button><button id="bX">초기화</button><button id="bC">촉매 변경</button><button id="bCmp">세 촉매 비교</button></div>
+<div class="bs"><button id="bT">온도 스윕</button><button id="bPs">압력 스윕</button><button id="bCsv">CSV 내보내기</button></div>
+<p class="note">촉매를 바꿔도 나머지 조건은 그대로 유지됩니다. 조건을 바꾸면 실험이 초기화됩니다.</p>
+<details><summary>가상 모형 계수 (수정 가능)</summary>
+<p class="warn">정성적 가정 모형: 금속 간 차이는 '공융 온도'(Fe 1150, Ni·Co 1320 °C)만 다르게 둔 것입니다. 설정 온도가 공융 온도를 넘은 정도(과열도)가 클수록 용해가 빨라집니다(과열도 척도 80 °C는 임의값). 공융 온도는 상압 근사 가정값으로 이번 조사에서 문헌 확인을 하지 못했고 고압에서는 달라지므로 직접 확인해 수정하세요. 나머지 계수는 근거가 없어 세 금속을 동일하게 두었습니다.</p>
+<table id="ct"></table><label>활성화 에너지 Ea(가상, kJ/mol)</label><input type="number" id="EA" value="150" min="20" max="400"></details></div>
+</aside>
+<main>
+<div class="p"><h2>반응 용기 모식도 <span class="badge" id="ph">① 초기 상태</span></h2>
+<canvas id="sim" width="900" height="440"></canvas>
+<div class="leg"><span><i style="background:#8d99a8"></i>흑연 탄소</span><span><i style="background:#3a4658"></i>금속 매질</span><span><i style="background:#ff9f43"></i>용해된 탄소</span><span><i style="background:#4dd0e1"></i>다이아몬드</span></div>
+<p class="note">반응 시간(모형 시간)과 재생 시간(실제 경과 시간)은 다릅니다. 승온·승압 구간은 표시만 하고 계산에서는 생략합니다. 원자 운동은 이해를 돕기 위한 모식도입니다.</p></div>
+<div class="p"><h2>그래프 <span class="badge">가상 계수 사용 · 시뮬레이션 예측값</span></h2>
+<div class="cg"><canvas id="c1" width="420" height="260"></canvas><canvas id="c2" width="420" height="260"></canvas><canvas id="c3" width="420" height="260"></canvas><canvas id="c4" width="420" height="260"></canvas></div></div>
+<div class="p"><h2>결과 해석 및 한계</h2><div id="sum" class="note">실험이 끝나면 계산된 데이터를 바탕으로 요약이 표시됩니다.</div></div>
+</main>
+<aside>
+<div class="p"><h2>대시보드</h2><div id="db"></div></div>
+<div class="p"><h2>과학 개념 설명</h2>
+<details open><summary>동소체와 구조</summary><p class="note">흑연과 다이아몬드는 모두 탄소(C)만으로 이루어진 동소체입니다. 흑연은 육각형 층이 겹친 층상 구조(층 사이는 약한 힘)이고, 다이아몬드는 각 탄소가 4개의 공유 결합으로 이어진 3차원 구조입니다.</p></details>
+<details><summary>안정한 상 vs 변환 속도</summary><p class="note">온도·압력에 따라 안정한 탄소 구조가 달라집니다(고압에서는 다이아몬드가 안정). 그러나 안정하다는 것(열역학)과 얼마나 빨리 바뀌는가(속도)는 별개입니다. 이 모형은 참고 경계식 P = 1.94 + T/400 (GPa, T는 °C)보다 압력이 높을 때만 다이아몬드가 생기도록 했습니다. 이 식은 문헌의 근사식이며 정확한 값이 아닙니다.</p></details>
+<details><summary>금속 용매의 역할</summary><p class="note">용융된 금속(Fe, Ni, Co 등)은 흑연 탄소를 녹이고, 녹은 탄소가 다이아몬드에 대해 과포화되면 핵이 생기고 결정이 자랍니다. 즉 흑연이 곧바로 변하는 것이 아니라 '용해 → 석출·성장' 경로를 거칩니다.</p></details>
+<details><summary>결과에 영향을 주는 요인</summary><p class="note">촉매 금속의 종류뿐 아니라 온도, 압력, 금속 조성, 탄소 용해도, 반응 시간, 핵 생성·성장 조건이 모두 영향을 줍니다.</p></details></div>
+</aside></div>
+<script>
+const $=i=>document.getElementById(i),N=120;
+const MT={Fe:{n:'철(Fe)',c:'#ff8a3d',te:1150,kd:.30,sg:.058,sd:.044,kn:.0105,kg:.41},Ni:{n:'니켈(Ni)',c:'#2dd4bf',te:1320,kd:.30,sg:.058,sd:.044,kn:.0105,kg:.41},Co:{n:'코발트(Co)',c:'#a78bfa',te:1320,kd:.30,sg:.058,sd:.044,kn:.0105,kg:.41}};
+const KS=['te','kd','sg','sd','kn','kg'],KN={te:'공융 온도(°C,가정)',kd:'용해 계수',sg:'흑연 용해도',sd:'다이아 용해도',kn:'핵 생성',kg:'성장'};
+let h='<tr><th></th>'+Object.keys(MT).map(k=>'<th>'+k+'</th>').join('')+'</tr>';
+KS.forEach(q=>{h+='<tr><td>'+KN[q]+'</td>'+Object.keys(MT).map(k=>'<td><input type="number" step="any" data-k="'+k+'" data-q="'+q+'" value="'+MT[k][q]+'"></td>').join('')+'</tr>'});
+$('ct').innerHTML=h;
+const gv=()=>({m:$('metal').value,T:+$('T').value,P:+$('P').value,R:+$('R').value,G:+$('G').value,M:+$('Mm').value});
+function sim(k,T,P,R,G0,mm){const p=MT[k],EA=+$('EA').value*1000,fT=Math.exp(-EA/8.314*(1/(T+273.15)-1/1673.15)),dP=P-(1.94+T/400),fP=dP>0?1-Math.exp(-dP/.5):0,fm=1-Math.exp(-Math.max(0,T-p.te)/80),Cg=mm*p.sg,Cd=mm*p.sd,dt=.02,o={t:[0],G:[G0],D:[0],X:[0]};
+let G=G0,D=0,X=0,ns=0;const n=Math.round(R/dt);
+for(let i=1;i<=n;i++){let rd=Math.min(p.kd*fT*fm*G*Math.max(0,1-D/Cg),G/dt),s=Math.max(0,(D-Cd)/Cd)*fP;
+ns+=p.kn*fT*s*(1-ns/.05)*dt;let rp=Math.min(p.kg*fT*s*(ns+Math.pow(X,2/3)),(D+rd*dt)/dt);
+G-=rd*dt;D+=(rd-rp)*dt;X+=rp*dt;if(i%5==0){o.t.push(+(i*dt).toFixed(2));o.G.push(G);o.D.push(D);o.X.push(X)}}
+o.fP=fP;o.fm=fm;o.dP=dP;return o}
+const rate=(d,i)=>{const j=Math.max(0,i-10);return(d.X[i]-d.X[j])/Math.max(.1,d.t[i]-d.t[j])*1000};
+let S={d:null,run:false,t:0,cmp:null,sw:null,pr:null,done:false,el:0,cond:null};
+const cv=$('sim'),cx=cv.getContext('2d'),W=900,H=440,CX=650,CY=225;
+const gp=[],pts=[];for(let i=0;i<N;i++){const l=Math.floor(i/30),j=i%30;gp.push([80+j*8.6,255+l*34+(j%2)*5])}
+for(let a=-9;a<=9;a++)for(let b=-9;b<=9;b++)pts.push([CX+a*14+(b%2)*7,CY+b*12,Math.hypot(a*14+(b%2)*7,b*12)+Math.random()*3]);
+pts.sort((a,b)=>a[2]-b[2]);const lat=pts.slice(0,N);
+const P_=[];for(let i=0;i<N;i++)P_.push({x:gp[i][0],y:gp[i][1],vx:0,vy:0,s:0});
+function resetP(){P_.forEach((p,i)=>{p.x=gp[i][0];p.y=gp[i][1];p.vx=p.vy=0;p.s=0})}
+function idx(){return S.d?Math.min(S.d.t.length-1,Math.floor(S.t/.1)):0}
+function state(){const d=S.d,i=idx(),C=d?d.G[0]:1;return d?{G:d.G[i],D:d.D[i],X:d.X[i],C}:{G:1,D:0,X:0,C:1}}
+function draw(){const c=S.cond||gv(),st=state(),R=c.R,ramp=S.d?Math.min(1,S.t/(.05*R)):0;
+cx.clearRect(0,0,W,H);cx.fillStyle='#1c232e';cx.fillRect(0,0,W,H);
+cx.fillStyle='#3a4658';cx.strokeStyle='#6b7a90';cx.lineWidth=3;cx.beginPath();cx.roundRect(40,40,820,375,14);cx.fill();cx.stroke();
+cx.fillStyle='rgba(255,255,255,.06)';cx.fillRect(65,235,290,135);
+const nG=Math.round(st.G/st.C*N),nX=Math.round(st.X/st.C*N),nD=Math.max(0,N-nG-nX);
+if(nX>0){cx.fillStyle='rgba(77,208,225,.10)';cx.beginPath();cx.arc(CX,CY,30+Math.sqrt(nX)*13,0,7);cx.fill()}
+const sup=S.d&&st.D>0&&S.d.fP>0;
+P_.forEach((p,i)=>{if(i<nX){p.s=2;p.x+=(lat[i][0]-p.x)*.08;p.y+=(lat[i][1]-p.y)*.08}
+else if(i<nX+nD){if(p.s==0){p.vx=(Math.random()-.5)*2;p.vy=-1}p.s=1;p.vx=p.vx*.96+(Math.random()-.5)*.7;p.vy=p.vy*.96+(Math.random()-.5)*.7;
+if(sup&&nX>0){p.vx+=(CX-p.x)*.0015;p.vy+=(CY-p.y)*.0015}
+p.x+=p.vx;p.y+=p.vy;if(p.x<52||p.x>848)p.vx*=-1;if(p.y<52||p.y>402)p.vy*=-1;p.x=Math.max(52,Math.min(848,p.x));p.y=Math.max(52,Math.min(402,p.y))}
+else{p.s=0;p.x=gp[i][0];p.y=gp[i][1]}});
+cx.strokeStyle='rgba(141,153,168,.5)';cx.lineWidth=1;cx.beginPath();
+for(let i=nX+nD;i<N-1;i++){if(i%30!=29){cx.moveTo(gp[i][0],gp[i][1]);cx.lineTo(gp[i+1][0],gp[i+1][1])}}cx.stroke();
+cx.strokeStyle='rgba(77,208,225,.7)';cx.beginPath();for(let i=0;i<nX;i++)for(let j=i+1;j<nX;j++){if(Math.hypot(P_[i].x-P_[j].x,P_[i].y-P_[j].y)<16){cx.moveTo(P_[i].x,P_[i].y);cx.lineTo(P_[j].x,P_[j].y)}}cx.stroke();
+P_.forEach(p=>{cx.fillStyle=p.s==2?'#4dd0e1':p.s==1?'#ff9f43':'#8d99a8';cx.beginPath();cx.arc(p.x,p.y,p.s==1?3:4,0,7);cx.fill()});
+cx.fillStyle='#c9d3e0';cx.font='13px sans-serif';cx.fillText('흑연(층상 구조)',80,385);cx.fillText('금속 매질(용융)',80,70);if(nX>0)cx.fillText('다이아몬드 결정',CX-45,CY+30+Math.sqrt(nX)*13);
+const Ts=25+(c.T-25)*ramp,Ps=c.P*ramp;
+cx.fillStyle='#e6ebf2';cx.font='bold 13px sans-serif';cx.fillText('T '+Ts.toFixed(0)+' °C   P '+Ps.toFixed(2)+' GPa   (금속: '+MT[c.m].n+')',50,28);
+cx.fillStyle='#ffb86b';cx.fillText('모식도 · 가상 모형',730,28);
+let ph='① 초기 상태';if(S.d){if(ramp<1)ph='② 고온·고압 적용';else if(S.d.fm==0)ph='금속이 녹지 않음(공융 온도 이하)';else if(S.d.fP==0)ph='안정 영역 아님: 다이아몬드 생성 불가';else if(st.X/st.C<.01)ph=(st.D<c.M*MT[c.m].sd)?'③ 탄소 용해':'④ 핵 생성(유도 기간)';else ph='⑤ 결정 성장'}
+if(S.done)ph+=' · 종료';$('ph').textContent=ph;$('ph').className='badge lit'}
+function dash(){const c=S.cond||gv(),st=state(),i=idx(),d=S.d,x=st.X;
+const rows=[['촉매 금속',MT[c.m].n],['온도 / 압력',c.T+' °C / '+c.P.toFixed(1)+' GPa'],['반응 시간(모형)',(d?d.t[i]:0).toFixed(1)+' / '+c.R+' 분'],['재생 시간(실제)',S.el.toFixed(1)+' 초'],['초기 흑연',c.G+' g'],['남은 흑연',st.G.toFixed(3)+' g'],['용해된 탄소',st.D.toFixed(3)+' g'],['다이아몬드',x.toFixed(3)+' g'],['변환율',(d?x/st.C*100:0).toFixed(1)+' %'],['생성 속도',(d?rate(d,i):0).toFixed(2)+' mg/분'],['질량 수지 합',(st.G+st.D+x).toFixed(3)+' g']];
+$('db').innerHTML=rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join('')+'<p class="note">변환율 = 다이아몬드 탄소 질량 ÷ 초기 흑연 탄소 질량 × 100 (용해 탄소 제외). 모든 값은 시뮬레이션 예측값입니다.</p>'}
+function chart(id,ser,o){const c=$(id),g=c.getContext('2d'),w=c.width,h=c.height,L=48,B=34,T=26;g.clearRect(0,0,w,h);g.fillStyle='#e6ebf2';g.font='12px sans-serif';g.fillText(o.title,8,15);
+let mx=Math.max(o.ymin0||0,...ser.map(s=>Math.max(...s.y,0)))||1;mx*=1.1;const xm=o.xmax,X=v=>L+(w-L-10)*(v-(o.xmin||0))/(xm-(o.xmin||0)),Y=v=>h-B-(h-B-T)*v/mx;
+g.strokeStyle='#44536a';g.strokeRect(L,T,w-L-10,h-B-T);g.fillStyle='#9aa6b6';
+for(let k=0;k<=4;k++){const v=mx*k/4;g.fillText(v.toFixed(mx<10?2:0),4,Y(v)+4);g.beginPath();g.moveTo(L,Y(v));g.lineTo(w-10,Y(v));g.strokeStyle='rgba(68,83,106,.4)';g.stroke()}
+for(let k=0;k<=4;k++){const v=(o.xmin||0)+(xm-(o.xmin||0))*k/4;g.fillText(v.toFixed(xm>100?0:1),X(v)-10,h-18)}
+g.fillText(o.xl,w/2-30,h-4);g.save();g.translate(12,h/2+20);g.rotate(-Math.PI/2);g.fillText(o.yl,0,0);g.restore();
+ser.forEach((s,j)=>{g.strokeStyle=s.c;g.lineWidth=s.w||2;g.setLineDash(s.dash?[5,4]:[]);g.beginPath();s.x.forEach((x,i)=>{i?g.lineTo(X(x),Y(s.y[i])):g.moveTo(X(x),Y(s.y[i]))});g.stroke();g.setLineDash([]);g.fillStyle=s.c;g.fillRect(w-100,8+j*0+0,0,0);g.fillText(s.n,L+6+j*70,T+14)})}
+function bars(){const c=$('c3'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);g.fillStyle='#e6ebf2';g.font='12px sans-serif';g.fillText('최종 변환율 비교 (가상 계수·예측값)',8,15);
+const cf=S.cond||gv(),ks=Object.keys(MT),vals=ks.map(k=>S.cmp?S.cmp[k].X.at(-1)/cf.G*100:(S.done&&k==cf.m?S.d.X.at(-1)/cf.G*100:null)),mx=Math.max(10,...vals.map(v=>v||0))*1.15;
+ks.forEach((k,i)=>{const x=60+i*115,v=vals[i];g.fillStyle='#9aa6b6';g.fillText(MT[k].n,x,h-14);if(v!=null){const bh=(h-70)*v/mx;g.fillStyle=MT[k].c;g.fillRect(x,h-30-bh,70,bh);g.fillStyle='#e6ebf2';g.fillText(v.toFixed(1)+'%',x+14,h-34-bh)}else{g.fillStyle='#44536a';g.fillText('미실행',x+12,h-60)}})}
+function sweepChart(){const c=$('c4'),g=c.getContext('2d');if(!S.sw){g.clearRect(0,0,420,260);g.fillStyle='#9aa6b6';g.font='12px sans-serif';g.fillText('온도/압력 스윕: 변수에 따른 최종 변환율',8,15);g.fillText('(왼쪽 버튼으로 실행 · 가상 계수)',8,36);return}
+const s=S.sw;chart('c4',Object.keys(MT).map(k=>({n:k,c:MT[k].c,x:s.xs,y:s.ys[k]})),{title:s.t+'에 따른 최종 변환율 (가상 계수)',xl:s.xl,yl:'변환율 (%)',xmax:s.xs.at(-1),xmin:s.xs[0]})}
+function charts(){const c=S.cond||gv(),i=idx(),d=S.d;let s1=[],s2=[];
+if(S.cmp){Object.keys(MT).forEach(k=>{const q=S.cmp[k];s1.push({n:k,c:MT[k].c,x:q.t,y:q.X,dash:k!=c.m});s2.push({n:k,c:MT[k].c,x:q.t,y:q.X.map(v=>v/c.G*100),dash:k!=c.m})})}
+else if(d){s1.push({n:c.m,c:MT[c.m].c,x:d.t.slice(0,i+1),y:d.X.slice(0,i+1)});s2.push({n:c.m,c:MT[c.m].c,x:d.t.slice(0,i+1),y:d.X.slice(0,i+1).map(v=>v/c.G*100)})}
+if(!s1.length){s1=[{n:'',c:'#000',x:[0,1],y:[0,0]}];s2=s1}
+chart('c1',s1,{title:'시간에 따른 다이아몬드 생성량 (가상 계수)',xl:'반응 시간 (분)',yl:'질량 (g)',xmax:c.R});
+chart('c2',s2,{title:'시간에 따른 변환율 (가상 계수)',xl:'반응 시간 (분)',yl:'변환율 (%)',xmax:c.R,ymin0:5});bars();sweepChart()}
+function summary(){const c=S.cond,d=S.d,fin=d.X.at(-1)/c.G*100;let tl=d.t.find((t,i)=>d.X[i]>.01*c.G);let pk=0,pi=0;for(let i=0;i<d.t.length;i++){const r=rate(d,i);if(r>pk){pk=r;pi=i}}
+let s='<p>• 조건('+c.T+' °C, '+c.P.toFixed(1)+' GPa, '+MT[c.m].n+') ';
+if(d.fm==0)s+='은 설정 온도가 가정한 공융 온도 이하여서 금속이 녹지 않아 용해·생성이 없었습니다. 온도를 높이거나 공융 온도 가정값을 확인해 보세요.</p>';else if(d.fP==0)s+='은 참고 경계식 기준 다이아몬드 안정 영역이 아니어서 생성량이 0이었습니다. 압력을 높이거나 온도를 낮춰 보세요.</p>';
+else s+='에서 최종 변환율은 '+fin.toFixed(1)+' %였고, 다이아몬드는 '+d.X.at(-1).toFixed(3)+' g 생성되었습니다. 변환율이 1%를 넘은 시점은 '+(tl!=null?tl.toFixed(1)+'분':'도달하지 못함')+', 생성 속도 최대는 '+pk.toFixed(2)+' mg/분(약 '+d.t[pi].toFixed(1)+'분)이었습니다.</p>';
+s+='<p>• 용해된 탄소가 남아 있는 한 다이아몬드 용해도 이하로는 석출되지 않으므로 변환율은 100%에 도달하지 않습니다(남은 용해 탄소 '+d.D.at(-1).toFixed(3)+' g, 남은 흑연 '+d.G.at(-1).toFixed(3)+' g).</p>';
+if(S.cmp){const f=Object.keys(MT).map(k=>[k,S.cmp[k].X.at(-1)/c.G*100]);s+='<p>• 같은 조건에서 세 촉매 비교: '+f.map(a=>a[0]+' '+a[1].toFixed(1)+'%').join(', ')+' (최대−최소 '+(Math.max(...f.map(a=>a[1]))-Math.min(...f.map(a=>a[1]))).toFixed(1)+'%p). 이 차이는 “공융 온도가 낮은 금속일수록 같은 온도에서 더 빨리 녹는다”는 정성적 가정(상압 근사 공융 온도, 미검증)에서 생긴 것이며 실제 촉매 활성의 정량적 우열이 아닙니다.</p>'}
+else s+='<p>• 촉매 금속 간 차이를 보려면 [세 촉매 비교]를 실행하세요. 아직 비교하지 않았으므로 금속의 우열은 판단하지 않습니다.</p>';
+s+='<p class="warn">• 한계: 속도 계수·용해도는 실험으로 검증되지 않은 가상 값이고, 온도(아레니우스 형태)·압력(경계식 이탈 정도) 의존성도 교육용 단순화입니다. 핵 생성·성장·용매 조성·불순물 등 실제 요인은 반영되지 않아 실제 합성 결과에 그대로 적용할 수 없습니다.</p>';$('sum').innerHTML=s}
+function start(){const c=gv();S.cond=c;S.d=sim(c.m,c.T,c.P,c.R,c.G,c.M);S.t=0;S.el=0;S.done=false;S.run=true;resetP();$('sum').innerHTML='실험 진행 중…';charts()}
+function reset(){S.run=false;S.d=null;S.t=0;S.el=0;S.done=false;S.cond=null;S.cmp=null;S.sw=null;resetP();$('sum').innerHTML='실험이 끝나면 계산된 데이터를 바탕으로 요약이 표시됩니다.';charts();dash();draw()}
+let last=0;function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;
+if(S.run&&S.d){S.t+=dt*(+$('spd').value);S.el+=dt;if(S.t>=S.cond.R){S.t=S.cond.R;S.run=false;S.done=true;summary()}charts()}dash();draw();requestAnimationFrame(loop)}
+['T','P','R','G','Mm'].forEach(k=>$(k).addEventListener('input',()=>{$('vT').textContent=$('T').value;$('vP').textContent=(+$('P').value).toFixed(1);$('vR').textContent=$('R').value;$('vG').textContent=$('G').value;$('vM').textContent=$('Mm').value}));
+['T','P','R','G','Mm','metal'].forEach(k=>$(k).addEventListener('change',reset));
+document.querySelectorAll('#ct input').forEach(e=>e.addEventListener('change',()=>{const v=parseFloat(e.value);if(v>0)MT[e.dataset.k][e.dataset.q]=v;else e.value=MT[e.dataset.k][e.dataset.q];reset()}));
+$('EA').addEventListener('change',reset);
+$('bS').onclick=start;$('bP').onclick=()=>{S.run=false};$('bRs').onclick=()=>{if(S.d&&!S.done)S.run=true};$('bX').onclick=reset;
+$('bC').onclick=()=>{const ks=Object.keys(MT),m=$('metal');m.value=ks[(ks.indexOf(m.value)+1)%3];const cmp=S.cmp;start();S.cmp=cmp&&JSON.stringify(S.cond)==JSON.stringify(cmp._c)?cmp:null;charts()};
+$('bCmp').onclick=()=>{const c=gv(),o={};Object.keys(MT).forEach(k=>o[k]=sim(k,c.T,c.P,c.R,c.G,c.M));o._c=c;S.cmp=o;if(!S.d){S.cond=c;S.d=o[c.m];S.t=c.R;S.done=true;summary()}else if(S.done)summary();charts()};
+function sweep(kind){const c=gv(),xs=[],ys={Fe:[],Ni:[],Co:[]};const T=kind=='T';for(let v=T?1300:4.5;v<=(T?1700:7.5)+1e-9;v+=T?25:.25){xs.push(+v.toFixed(2));Object.keys(MT).forEach(k=>{const d=sim(k,T?v:c.T,T?c.P:v,c.R,c.G,c.M);ys[k].push(d.X.at(-1)/c.G*100)})}
+S.sw={xs,ys,t:T?'온도':'압력',xl:T?'온도 (°C), 압력 '+c.P+' GPa 고정':'압력 (GPa), 온도 '+c.T+' °C 고정'};charts()}
+$('bT').onclick=()=>sweep('T');$('bPs').onclick=()=>sweep('P');
+$('bCsv').onclick=()=>{const c=S.cond||gv(),d=S.d;if(!d){alert('먼저 실험을 실행하세요.');return}
+let r=['# 시뮬레이션 예측값(가상 모형 계수 사용, 실제 실험값 아님)','# 촉매,'+c.m+',온도(C),'+c.T+',압력(GPa),'+c.P+',초기흑연(g),'+c.G+',금속(g),'+c.M,'시간(분),남은흑연(g),용해탄소(g),다이아몬드(g),변환율(%),생성속도(mg/분)'];
+d.t.forEach((t,i)=>r.push([t,d.G[i].toFixed(5),d.D[i].toFixed(5),d.X[i].toFixed(5),(d.X[i]/c.G*100).toFixed(3),rate(d,i).toFixed(3)].join(',')));
+if(S.cmp){r.push('','# 세 촉매 최종 변환율(%)');Object.keys(MT).forEach(k=>r.push(k+','+(S.cmp[k].X.at(-1)/c.G*100).toFixed(3)))}
+const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+r.join('\n')],{type:'text/csv'}));a.download='diamond_sim.csv';a.click()};
+['T','P','R','G','Mm'].forEach(k=>$(k).dispatchEvent(new Event('input')));charts();requestAnimationFrame(loop);
+</script></body></html>
